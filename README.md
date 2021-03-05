@@ -19,8 +19,8 @@ The required (application) permissions to assign to the app are:
 
 ### Azure Function App
 The Azure Function App contains two Azure functions:
-- AddTeamsInQueue
-- ProcessTeam
+[- AddTeamsInQueue](/AddTeamsInQueue)
+[- ProcessTeam](/ProcessTeam)
 
 The PowerShell modules used by the solution are:
 - PnP.PowerShell (loaded as  managed dependency)
