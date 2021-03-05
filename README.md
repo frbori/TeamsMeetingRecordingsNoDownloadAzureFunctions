@@ -66,7 +66,7 @@ All the dates and times are logged in UTC.
 Deploying the solution on your tenant comprises 3 main steps:
 1. Registering an App in Azure AD
 2. Creating the required Azure resources (Resource Group, Storage Account, Function App)
-3. Deploy the zip package to the Function App
+3. Deploy the zip package to the Function App (if you want to  create the zip file by downloading this repository, keep in mind the zip file shouldn't contain a root folder but directly the contents; once downloaded assure you extract and re-zip the contents properly. [Zip deployment for Azure Functions](https://docs.microsoft.com/en-us/azure/azure-functions/deployment-zip-push)).
 
 You can complete the major part of those steps programmatically by using the sample script below (it requires [PnP.PowerShell](https://pnp.github.io/powershell/) and [AZ](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
 ```powershell
