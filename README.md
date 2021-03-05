@@ -30,19 +30,19 @@ The PowerShell modules used by the solution are:
 - Microsoft.Graph.Files (explicitely inclueded in the solution due to issues when trying to load it as managed dependency)
 
 #### AddTeamsInQueue
-This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called *teamsqueue*.
+This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called **teamsqueue**.
 Each message contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
 
 #### ProcessTeam
-This is a queue triggered function (it triggers when new messages get into the *teamsqueue*) that processes the specific team.
+This is a queue triggered function (it triggers when new messages get into the **teamsqueue**) that processes the specific team.
 The team processing entails:
 - retrieving all the team channels (both standard and private)
 - retrieving the channels folders
 - creating the "Recordings" folder inside the channels folders (if not already created)
 - changing the permissions on the **Recordings** folders so that team members won't be able to download files stored into those folders
 
-This function logs processing outcome into an Azure storage table called *Log*. It logs at both teams and channels level.
-The *Log* storage table contains the following columns:
+This function logs processing outcome into an Azure storage table called **Log**. It logs at both teams and channels level.
+The **Log** storage table contains the following columns:
 - PartitionKey (set as the current year - eg.: *2021*)
 - RowKey (set as team id or channels id + the current date and time)
 - Timestamp
@@ -66,7 +66,7 @@ Deploying the solution on your tenant comprises 3 main steps:
 2. Creating the required Azure resources (Resource Group, Storage Account, Function App)
 3. Deploy the zip package to the Function App
 
-You can complete the major part of those steps programmatically by using the sample script below (it requires [*PnP.PowerShell*](https://pnp.github.io/powershell/) and [*AZ*](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
+You can complete the major part of those steps programmatically by using the sample script below (it requires [PnP.PowerShell](https://pnp.github.io/powershell/) and [AZ](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
 ```powershell
 #region VARIABLES
 $tenantPrefix = "*<tenantPrefix>*"    # this is the part just before .onmicrosoft.com
@@ -142,7 +142,7 @@ Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -A
 Disconnect-AzAccount
 ```
 The remaining manual steps are (as highlighted by the script itself):
-- add *MSGraph.TeamSettings.Read.All* permission to the Azure AD app and grant admin consent for all the assigned permissions
+- add **MSGraph.TeamSettings.Read.All** permission to the Azure AD app and grant admin consent for all the assigned permissions
 - upload the private key certificate (pfx) in the Function App:
     - locate the certificate generated during the app registration (*$certsOutputPath* parameter)
     - navigate to the Function App
