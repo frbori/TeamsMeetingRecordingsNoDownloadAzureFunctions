@@ -33,7 +33,7 @@ The PowerShell modules used by the solution are:
 This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called **teamsqueue**.
 Each message contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
 
-The already defined schedule is each day at 6:00 AM UTC (file [function.json](/AddTeamsInQueue/function.json)).
+The already defined schedule is each day at 6:00 AM UTC (defined in file [function.json](/AddTeamsInQueue/function.json)).
 
 #### ProcessTeam
 This is a queue triggered function (it triggers when new messages get into the **teamsqueue**) that processes the specific team.
