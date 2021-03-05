@@ -41,7 +41,24 @@ The team processing entails:
 - creating the "Recordings" folder inside the channels folders (if not already created)
 - changing the permissions on the **Recordings** folders so that team members won't be able to download files stored into those folders
 
-This function logs processing outcome into an Azure storage table called *Log*.
+This function logs processing outcome into an Azure storage table called *Log*. It logs at both teams and channels level.
+The *Log* storage table contains the following columns:
+- PartitionKey (set as the current year - eg.: *2021*)
+- RowKey (set as team id or channels id + the current date and time)
+- Timestamp
+- TeamId
+- TeamDisplayName
+- ChannelId (null means the entity refers to the entire team, otherwise the specific channel)
+- ChannelDisplayName (null means the entity refers to the entire team, otherwise the specific channel)
+- StartTime
+- EndTime
+- Duration
+- Outcome (tells if the team or the channel has been processed successfully or not)
+- Details (tells in which step the error occurred)
+- Exceptions (dumps the exception)
+- CorrelationId (to correlate entities belonging to the same function execution instance)
+
+All the dates and times are logged in UTC.
 
 ## How to deploy
 Deploying the solution on your tenant comprises 3 main steps:
