@@ -1,3 +1,4 @@
+# ProcessTeam
 This is a queue triggered function (it triggers when new messages get into the **teamsqueue**) that processes the specific team.
 The team processing entails:
 - retrieving all the team channels (both standard and private)
