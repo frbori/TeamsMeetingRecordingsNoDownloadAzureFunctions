@@ -1,9 +1,9 @@
 # TeamsMeetingRecordingsNoDownload
 This solution aims to prevent that Teams channel meeting recordings stored into SharePoint can be downloaded by team members.
 
-By default, Teams channel meeting recordings are saved into the SharePoint site associated to the team and team members are added to the default SharePoint members group, this gives them Edit permission on all the SharePoint contents, including the possibility of downloading files.
+By default, Teams channel meeting recordings are saved into the SharePoint site associated to the team and team members are added to the default SharePoint members group; this gives them Edit permission on all the SharePoint contents, including the possibility of downloading files.
 
-This solution basically changes the permissions assigned to the default SharePoint members group on the folders containing the recordings files (it breaks the permission inheritance and assigns the desired permission).
+This solution basically changes the permissions assigned to the default SharePoint members group on the folders containing the recordings files (it breaks the permissions inheritance and assigns the desired permissions).
 
 ## Solution components
 The solution is mainly composed by the follwing two components:
@@ -49,7 +49,7 @@ Deploying the solution on your tenant comprises 3 main steps:
 2. Creating the required Azure resources (Resource Group, Storage Account, Function App)
 3. Deploy the zip package to the Function App
 
-You can complete those steps programmatically by using the sample script below (it requires [*PnP.PowerShell*](https://pnp.github.io/powershell/) and [*AZ*](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
+You can complete the major part of those steps programmatically by using the sample script below (it requires [*PnP.PowerShell*](https://pnp.github.io/powershell/) and [*AZ*](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
 ```powershell
 #region VARIABLES
 $tenantPrefix = "*<tenantPrefix>*"    # this is the part just before .onmicrosoft.com
@@ -124,3 +124,12 @@ Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -A
 
 Disconnect-AzAccount
 ```
+The remaining manual steps are (as highlighted by the script itself):
+- add *MSGraph.TeamSettings.Read.All* permission to the Azure AD app and grant admin consent for all the assigned permissions
+- upload the private key certificate (pfx) in the Function App:
+    - locate the certificate generated during the app registration (*$certsOutputPath* parameter)
+    - navigate to the Function App
+    - select **TLS/SSL settings**
+    - select **Private Key Certificates (.pfx)** tab
+    - click on **+ Upload Certificate**
+    - select the certificate, enter the password (chosen during app registration) and click **Upload**
