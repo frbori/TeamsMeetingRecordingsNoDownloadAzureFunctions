@@ -1,4 +1,4 @@
-# TeamsMeetingRecordingsNoDownload
+# Teams Meeting Channel Recordings No Download
 This solution aims to prevent that Teams channel meeting recordings stored into SharePoint can be downloaded by team members.
 
 By default, Teams channel meeting recordings are saved into the SharePoint site associated to the team and team members are added to the default SharePoint members group; this gives them Edit permission on all the SharePoint contents, including the possibility of downloading files.
@@ -19,8 +19,8 @@ The required (application) permissions to assign to the app are:
 
 ### Azure Function App
 The Azure Function App contains two Azure functions:
-- AddTeamsInQueue
-- ProcessTeam
+- [AddTeamsInQueue](/AddTeamsInQueue)
+- [ProcessTeam](/ProcessTeam)
 
 The PowerShell modules used by the solution are:
 - PnP.PowerShell (loaded as  managed dependency)
@@ -33,7 +33,7 @@ The PowerShell modules used by the solution are:
 This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called **teamsqueue**.
 Each message contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
 
-The already defined schedule is each day at 6:00 AM UTC (file [function.json](/AddTeamsInQueue/function.json)).
+The already defined schedule is each day at 6:00 AM UTC (defined in file [function.json](/AddTeamsInQueue/function.json)).
 
 #### ProcessTeam
 This is a queue triggered function (it triggers when new messages get into the **teamsqueue**) that processes the specific team.
@@ -66,7 +66,7 @@ All the dates and times are logged in UTC.
 Deploying the solution on your tenant comprises 3 main steps:
 1. Registering an App in Azure AD
 2. Creating the required Azure resources (Resource Group, Storage Account, Function App)
-3. Deploy the zip package to the Function App
+3. Deploy the zip package to the Function App (if you want to  create the zip file by downloading this repository, keep in mind the zip file shouldn't contain a root folder but directly the contents; once downloaded assure you extract and re-zip the contents properly. [Zip deployment for Azure Functions](https://docs.microsoft.com/en-us/azure/azure-functions/deployment-zip-push)).
 
 You can complete the major part of those steps programmatically by using the sample script below (it requires [PnP.PowerShell](https://pnp.github.io/powershell/) and [AZ](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
 ```powershell
