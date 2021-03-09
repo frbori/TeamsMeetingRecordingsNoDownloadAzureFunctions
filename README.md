@@ -124,7 +124,8 @@ $appSettings = @{
         CERT_THUMBPRINT = $certThumbprint
         WEBSITE_LOAD_CERTIFICATES = $certThumbprint
         CREATE_RECORDINGS_FOLDER = $createRecordingsFolder
-        TENANT_PREFIX = $tenantPrefix 
+        TENANT_PREFIX = $tenantPrefix
+        SCHEDULE = "0 0 6 * * *"
 }
 
 Write-Host "Retrieving Function App '$functionAppName'"
