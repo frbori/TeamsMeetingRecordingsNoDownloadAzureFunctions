@@ -49,7 +49,7 @@ This is a queue triggered function (it triggers when new messages get into the *
 The team processing entails:
 - retrieving all the team channels (both standard and private)
 - retrieving the channels folders
-- creating the "Recordings" folder inside the channels folders (if not already created)
+- creating the "Recordings" folder inside the channels folders (if not already created and CREATE_RECORDINGS_FOLDER application setting set to "true")
 - changing the permissions on the **Recordings** folders so that team members won't be able to download files stored into those folders
 
 This function logs processing outcome into an Azure storage table called **Log**. It logs at both teams and channels level.
@@ -59,14 +59,14 @@ The **Log** storage table contains the following columns:
 - Timestamp
 - TeamId
 - TeamDisplayName
-- ChannelId (null means the entity refers to the entire team, otherwise the specific channel)
-- ChannelDisplayName (null means the entity refers to the entire team, otherwise the specific channel)
+- ChannelId (null means the entity refers to the entire team, otherwise to the specific channel)
+- ChannelDisplayName (null means the entity refers to the entire team, otherwise to the specific channel)
 - StartTime
 - EndTime
 - Duration
 - Outcome (tells if the team or the channel has been processed successfully or not)
 - Details (tells in which step the error occurred)
-- Exceptions (dumps the exception)
+- Exceptions (dumps the exceptions)
 - CorrelationId (to correlate entities belonging to the same function execution instance)
 
 All the dates and times are logged in UTC.
@@ -74,8 +74,8 @@ All the dates and times are logged in UTC.
 ## How to deploy
 Deploying the solution on your tenant comprises 3 main steps:
 1. Registering an App in Azure AD
-2. Creating the required Azure resources (Resource Group, Storage Account, Function App)
-3. Deploy the zip package to the Function App (if you want to  create the zip file by downloading this repository, keep in mind the zip file shouldn't contain a root folder but directly the contents; once downloaded assure you extract and re-zip the contents properly. [Zip deployment for Azure Functions](https://docs.microsoft.com/en-us/azure/azure-functions/deployment-zip-push)).
+2. Creating or retrieving the required Azure resources (Resource Group, Storage Account, Function App)
+3. Deploy the zip package to the Function App (if you want to create the zip file by downloading this repository, keep in mind the zip file shouldn't contain a root folder but directly the contents; once downloaded assure you extract and re-zip the contents properly. [Zip deployment for Azure Functions](https://docs.microsoft.com/en-us/azure/azure-functions/deployment-zip-push)).
 
 You can complete the major part of those steps programmatically by using the sample script below (it requires [PnP.PowerShell](https://pnp.github.io/powershell/) and [AZ](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
 ```powershell
