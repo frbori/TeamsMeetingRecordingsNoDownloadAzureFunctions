@@ -1,7 +1,7 @@
 # Teams Meeting Channel Recordings No Download
 This solution aims to prevent that Teams channel meeting recordings stored into SharePoint can be downloaded by team members.
 
-By default, Teams channel meeting recordings are saved into the SharePoint site associated to the team and team members are added to the default SharePoint members group; this gives them Edit permission on all the SharePoint contents, including the possibility of downloading files.
+By default, Teams channel meeting recordings are now saved into the SharePoint site associated to the team and team members are added to the default SharePoint members group; this gives them Edit permission on all the SharePoint contents, including the possibility of downloading files.
 
 This solution basically changes the permissions assigned to the default SharePoint members group on the folders containing the recordings files (it breaks the permissions inheritance and assigns the desired permissions).
 
@@ -29,11 +29,20 @@ The PowerShell modules used by the solution are:
 - Microsoft.Graph.Groups (loaded as  managed dependency)
 - Microsoft.Graph.Files (explicitely inclueded in the solution due to issues when trying to load it as managed dependency)
 
+The explicitely added Application Settings used by the Function App are:
+- WEBSITE_RUN_FROM_PACKAGE (set to "1")
+- CLIENT_ID (set as the Azure AD App Registration Id)
+- CERT_THUMBPRINT (set as the certificate thumbripint)
+- WEBSITE_LOAD_CERTIFICATES (set as the certificate thumbripint)
+- CREATE_RECORDINGS_FOLDER (if "true" the solution creates the "Recordings" folders if not already there, otherwise it changes the permissions only on the already created "Recordings" folders. Set by default to "true")
+- TENANT_PREFIX (set as the tenant prefix - the part of the tenant name just before ".onmicrosoft.com")
+- SCHEDULE (defines the schedule of the **AddTeamsInQueue** function as [NCRONTAB expression](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=csharp#ncrontab-expressions). Set by default at "0 0 6 * * *", that means each day at 6:00 AM UTC)
+
 #### AddTeamsInQueue
 This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called **teamsqueue**.
 Each message contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
 
-The already defined schedule is each day at 6:00 AM UTC (defined in file [function.json](/AddTeamsInQueue/function.json)).
+The already defined schedule is each day at 6:00 AM UTC, you can change it by modifying the value of SCHEDULE application setting.
 
 #### ProcessTeam
 This is a queue triggered function (it triggers when new messages get into the **teamsqueue**) that processes the specific team.
