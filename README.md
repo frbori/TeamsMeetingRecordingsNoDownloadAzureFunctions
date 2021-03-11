@@ -5,6 +5,8 @@ By default, Teams channel meeting recordings are now saved into the SharePoint s
 
 This solution basically changes the permissions assigned to the default SharePoint members group on the folders containing the recordings files (it breaks the permissions inheritance and assigns the desired permissions).
 
+[Here](https://github.com/JieYuan23/TeamsMeetingRecordingsNoDownload) you can find the same solution implemented as a single PowerShell script you might want to use for one-shot executions.
+
 ## Solution components
 The solution is mainly composed by the follwing two components:
 - an Azure AD App Registration
