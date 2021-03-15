@@ -88,7 +88,7 @@ You can complete the major part of those steps programmatically by using the sam
 $tenantPrefix = "<tenantPrefix>"             # the part just before .onmicrosoft.com, e.g.: contoso
 $appRegistrationName = "<appName>"           # the name of the Azure AD app registration
 $certsOutputPath = "<folderFullPath>"        # the folder shoud be already existing, e.g.: c:\cert
-$resourceGroupName = "<resourceGroupName>"   # the name of the Resource Group in which the resources will be created, if it doesn't match an existing Resource Group, it will be crated
+$resourceGroupName = "<resourceGroupName>"   # the name of the Resource Group in which the resources will be created, if it doesn't match an existing Resource Group, a new one will be created with this name
 $storageAccountName = "<storageAccountName>" # the name of the Storage Account in which the queue and the table will be created, if it doesn't match an existing Storage Account, it will be crated
 $location = "West Europe"                    # the geographical location used for creating the resources
 $functionAppName = "<functionAppName>"       # the name of the Function App
