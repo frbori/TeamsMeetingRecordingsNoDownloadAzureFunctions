@@ -44,6 +44,8 @@ The explicitely added Application Settings used by the Function App are:
 This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called **teamsqueue**.
 Each message contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
 
+If you want to manually add a message to the queue (e.g.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*) in order to start the processing of a specific team, you can use the handy tool [Azure Storage Explorer](https://azure.microsoft.com/en-us/features/storage-explorer/).
+
 The already defined schedule is each day at 6:00 AM UTC, you can change it by modifying the value of SCHEDULE application setting.
 
 #### ProcessTeam
@@ -70,8 +72,9 @@ The **Log** storage table contains the following columns:
 - Details (tells in which step the error occurred)
 - Exceptions (dumps the exceptions)
 - CorrelationId (to correlate entities belonging to the same function execution instance)
-
 All the dates and times are logged in UTC.
+
+You can use the handy tool [Azure Storage Explorer](https://azure.microsoft.com/en-us/features/storage-explorer/) to see the entities that have been already added to the table.
 
 ## How to deploy
 Deploying the solution on your tenant comprises 3 main steps:
