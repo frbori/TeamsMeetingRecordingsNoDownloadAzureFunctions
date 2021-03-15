@@ -16,7 +16,6 @@ The solution is mainly composed by the follwing two components:
 The Azure AD App Registration is required to allow the two Azure functions to get authenticated and authorized. The Access Token is retrieved by specifying *client id* and *certificate thumbprint*.
 The required (application) permissions to assign to the app are:
 - Group.Read.All
-- TeamSettings.Read.All
 - Sites.FullControl.All
 
 ### Azure Function App
@@ -105,7 +104,7 @@ $appRegistration = Register-PnPAzureADApp -ApplicationName $appRegistrationName 
     -DeviceLogin -OutPath $certsOutputPath -CertificatePassword $certPassword
 $clientId = $appRegistration.'AzureAppId/ClientId'
 $certThumbprint = $appRegistration.'Certificate Thumbprint'
-Write-Host "Remember to add also scope 'MSGraph.TeamSettings.Read.All' to app '$appRegistrationName' and grant admin consent for those permissions" -ForegroundColor Yellow
+Write-Host "Remember to grant admin consent for those permissions" -ForegroundColor Yellow
 #endregion AZURE APP REGISTRATION
 
 Connect-AzAccount
@@ -159,7 +158,7 @@ Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -A
 Disconnect-AzAccount
 ```
 The remaining manual steps are (as highlighted by the script as well):
-- add **MSGraph.TeamSettings.Read.All** permission to the Azure AD app and grant admin consent for all the assigned permissions
+- grant admin consent for all the permissions assigned to the Azure AD App Registration
 - upload the private key certificate (pfx) in the Function App:
     - locate the certificate generated during the app registration (*$certsOutputPath* parameter)
     - navigate to the Function App
