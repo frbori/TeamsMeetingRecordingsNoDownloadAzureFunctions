@@ -158,7 +158,7 @@ Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -A
 
 Disconnect-AzAccount
 ```
-The remaining manual steps are (as highlighted by the script itself):
+The remaining manual steps are (as highlighted by the script as well):
 - add **MSGraph.TeamSettings.Read.All** permission to the Azure AD app and grant admin consent for all the assigned permissions
 - upload the private key certificate (pfx) in the Function App:
     - locate the certificate generated during the app registration (*$certsOutputPath* parameter)
