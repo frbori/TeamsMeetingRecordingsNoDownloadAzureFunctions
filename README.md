@@ -85,16 +85,16 @@ Deploying the solution on your tenant comprises 3 main steps:
 You can complete the major part of those steps programmatically by using the sample script below (it requires [PnP.PowerShell](https://pnp.github.io/powershell/) and [AZ](https://docs.microsoft.com/en-us/powershell/azure/new-azureps-module-az) PowerShell modules):
 ```powershell
 #region VARIABLES
-$tenantPrefix = "*<tenantPrefix>*"    # this is the part just before .onmicrosoft.com
-$appRegistrationName = "*<appName>*"
-$certsOutputPath = "*<folderFullPath>*"    # this folder shoud be already existing
-$resourceGroupName = "*<resourceGroupName>*"
-$storageAccountName = "*<storageAccountName>*"
-$location = "West Europe"
-$functionAppName = "*<functionAppName>*"
-$createRecordingsFolder = "true"
-$zipPackage = "*<zipPackageFullPath>*"
-$subscriptionName = ""    # leave blank if you have juts one subscription, otherwise specify which subscription you want to use
+$tenantPrefix = "<tenantPrefix>"             # the part just before .onmicrosoft.com, e.g.: contoso
+$appRegistrationName = "<appName>"           # the name of the Azure AD app registration
+$certsOutputPath = "<folderFullPath>"        # the folder shoud be already existing, e.g.: c:\cert
+$resourceGroupName = "<resourceGroupName>"   # the name of the Resource Group in which the resources will be created, if it doesn't match an existing Resource Group, it will be crated
+$storageAccountName = "<storageAccountName>" # the name of the Storage Account in which the queue and the table will be created, if it doesn't match an existing Storage Account, it will be crated
+$location = "West Europe"                    # the geographical location used for creating the resources
+$functionAppName = "<functionAppName>"       # the name of the Function App
+$createRecordingsFolder = "true"             # set this to "true" to have the script pre-create the Recordings folders if not already there
+$zipPackage = "<zipPackageFullPath>"         # the full path to the zip file, e.g.: c:\package\file.zip
+$subscriptionName = ""                       # leave blank if you have juts one subscription, otherwise specify which subscription you want to use
 #endregion VARIABLES
 
 #region AZURE APP REGISTRATION
