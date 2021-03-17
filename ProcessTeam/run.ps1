@@ -14,6 +14,7 @@ $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
 $createRecordingsFolder = "true" -eq $env:CREATE_RECORDINGS_FOLDER
 $roleName = "Read no download"
+$roleDescription = "Can view pages and list items but can't download documents."
 $outcome = "Completed with no error."
 $details = ""
 $exceptions = ""
