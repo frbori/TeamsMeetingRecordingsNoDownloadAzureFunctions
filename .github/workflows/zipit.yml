@@ -24,3 +24,7 @@ jobs:
       - uses: montudor/action-zip@v0.1.1
         with:
           args: zip -qq -r function.zip . -i readme.md
+      - uses: actions/upload-artifact@v1
+        with:
+          name: my-artifact
+          path: ${{ github.workspace }}/function.zip
