@@ -27,7 +27,7 @@ jobs:
           # Filename for archive
           filename: release.zip
           # Base path for archive files
-          path: ..\..\
+          path: ../../
           # Working directory before zipping
           directory: .
           
