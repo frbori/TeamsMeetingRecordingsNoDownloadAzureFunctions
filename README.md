@@ -71,6 +71,7 @@ The **Log** storage table contains the following columns:
 - Details (tells in which step the error occurred)
 - Exceptions (dumps the exceptions)
 - CorrelationId (to correlate entities belonging to the same function execution instance)
+
 All the dates and times are logged in UTC.
 
 You can use the handy tool [Azure Storage Explorer](https://azure.microsoft.com/en-us/features/storage-explorer/) to see the entities that have been already added to the table.
