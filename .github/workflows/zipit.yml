@@ -23,4 +23,4 @@ jobs:
     steps:
       - uses: montudor/action-zip@v0.1.1
         with:
-          args: zip -qq -r function.zip *
+          args: zip -qq -r function.zip . -i *
