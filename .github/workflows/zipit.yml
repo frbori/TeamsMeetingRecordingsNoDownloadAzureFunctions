@@ -25,11 +25,4 @@ jobs:
       - uses: TheDoctor0/zip-release@0.4.1
         with:
           # Filename for archive
-          filename: release.zip
-          # Base path for archive files
-          path: ../../
-          # Working directory before zipping
-          directory: .
-          
-          
-          
+          filename: release.zip        
