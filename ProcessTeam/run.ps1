@@ -107,7 +107,7 @@ catch {
         CorrelationId   = $correlationId
     }
     Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
+    $log | Push-OutputBinding -Name "TableBinding"
     return
 }
 #endregion Getting the SharePoint site url associated to the team/o365 group
@@ -136,7 +136,7 @@ catch {
         CorrelationId   = $correlationId
     }
     Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
+    $log | Push-OutputBinding -Name "TableBinding"
     return
 }
 #endregion Connecting to the SharePoint site associated to the team/o365 group
@@ -171,7 +171,7 @@ catch {
         CorrelationId   = $correlationId
     }
     Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
+    $log | Push-OutputBinding -Name "TableBinding"
     return
 }   
 #endregion Getting the current web site and associated SharePoint groups
@@ -182,7 +182,7 @@ try {
     $readNoDownload = Get-PnPRoleDefinition $roleName -ErrorAction SilentlyContinue -Connection $teamSiteConn
     if ($null -eq $readNoDownload) {
         Write-Information "Custom SharePoint role '$roleName' not present, creating it."
-        $readNoDownload = Add-PnPRoleDefinition -RoleName $roleName -Description $roleDescription -Clone $visitorsRole.Name -Exclude OpenItems -ErrorAction Stop -Connection $teamSiteConn
+        $readNoDownload = Add-PnPRoleDefinition -RoleName $roleName -Description $roleDescription -Clone $teamSiteVisitorsRole.Name -Exclude OpenItems -ErrorAction Stop -Connection $teamSiteConn
     }
 }
 catch {
@@ -204,7 +204,7 @@ catch {
         CorrelationId   = $correlationId
     }
     Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
+    $log | Push-OutputBinding -Name "TableBinding"
     return
 }   
 #endregion Handling custom permission level
@@ -239,7 +239,7 @@ catch {
         CorrelationId   = $correlationId
     }
     Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
+    $log | Push-OutputBinding -Name "TableBinding"
     return
 }
 #endregion Getting Documents document library
@@ -268,7 +268,7 @@ catch {
         CorrelationId   = $correlationId
     }
     Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
+    $log | Push-OutputBinding -Name "TableBinding"
     return
 }
 #endregion Retrieving all the public channels
