@@ -89,7 +89,7 @@ $tenantPrefix = "<tenantPrefix>"             # the part just before .onmicrosoft
 $appRegistrationName = "<appName>"           # the name of the Azure AD app registration
 $certsOutputPath = "<folderFullPath>"        # the folder shoud be already existing, e.g.: c:\cert
 $resourceGroupName = "<resourceGroupName>"   # the name of the Resource Group in which the resources will be created, if it doesn't match an existing Resource Group, a new one will be created with this name
-$storageAccountName = "<storageAccountName>" # the name of the Storage Account in which the queue and the table will be created, if it doesn't match an existing Storage Account, it will be crated
+$storageAccountName = "<storageAccountName>" # the name of the Storage Account in which the queue and the table will be created, if it doesn't match an existing Storage Account, it will be crated. Note: the storage account name must be between 3 and 24 characters in length and use numbers and lower-case letters only.
 $location = "West Europe"                    # the geographical location used for creating the resources
 $functionAppName = "<functionAppName>"       # the name of the Function App
 $createRecordingsFolder = "true"             # set this to "true" to have the script pre-create the Recordings folders if not already there
@@ -146,6 +146,12 @@ Write-Host "Retrieving Function App '$functionAppName'"
 $functionApp = Get-AzFunctionApp -Name $functionAppName -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
 if ($null -eq $functionApp)
 {
+    $microsoftWebResourceProvider = Get-AzResourceProvider -ProviderNamespace Microsoft.Web -Location $location | ? {$_.RegistrationState -eq "Registered"}
+    if ($null -eq $microsoftWebResourceProvider)
+    {
+        Write-Host "First registering 'Microsoft.Web' resource provider"
+        Register-AzResourceProvider -ProviderNamespace Microsoft.Web
+    }
     Write-Host "Function App '$functionAppName' is not present, creating it"
     New-AzFunctionApp -ResourceGroupName $resourceGroupName -Name $functionAppName -Location $location -Runtime PowerShell -OSType Windows -RuntimeVersion 7.0 -FunctionsVersion 3 -StorageAccountName $storageAccountName -AppSetting $appSettings
 }
