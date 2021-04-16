@@ -13,8 +13,6 @@ $spoRootUrl = "https://$env:TENANT_PREFIX.sharepoint.com"
 $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
 $createRecordingsFolder = "true" -eq $env:CREATE_RECORDINGS_FOLDER
-$roleName = "Read no download"
-$roleDescription = "Can view pages and list items but can't download documents."
 $outcome = "Completed with no error."
 $details = ""
 $exceptions = ""
@@ -144,13 +142,15 @@ catch {
 #region Getting the current web site and associated SharePoint groups
 try {
     Write-Information "Retrieving SharePoint Team Web Site (SPWeb object) and associated default SharePoint groups."
-    $web = Get-PnPWeb -Includes AssociatedMemberGroup, AssociatedVisitorGroup -ErrorAction Stop -Connection $teamSiteConn
+    $web = Get-PnPWeb -Includes AssociatedMemberGroup, AssociatedVisitorGroup, AssociatedOwnerGroup -ErrorAction Stop -Connection $teamSiteConn
     $teamSiteMembers = $web.AssociatedMemberGroup
     $teamSitevisitors = $web.AssociatedVisitorGroup
+    $teamSiteOwners = $web.AssociatedOwnerGroup
     
     Write-Information "Retrieving default SharePoint groups associated permissions."
     $teamSiteMembersRole = Get-PnPGroupPermissions -Identity $teamSiteMembers -ErrorAction Stop -Connection $teamSiteConn | Where-Object { $_.Hidden -eq $false }
     $teamSiteVisitorsRole = Get-PnPGroupPermissions -Identity $teamSitevisitors -ErrorAction Stop -Connection $teamSiteConn | Where-Object { $_.Hidden -eq $false }
+    $teamSiteOwnersRole = Get-PnPGroupPermissions -Identity $teamSiteOwners -ErrorAction Stop -Connection $teamSiteConn | Where-Object { $_.Hidden -eq $false }
 }
 catch {
     $outcome = "Team error."
@@ -176,18 +176,15 @@ catch {
 }   
 #endregion Getting the current web site and associated SharePoint groups
 
-#region Handling custom permission level
+#region Retrieving Restricted View permission level
 try {
-    Write-Information "Retrieving custom SharePoint role '$roleName'."
-    $readNoDownload = Get-PnPRoleDefinition $roleName -ErrorAction SilentlyContinue -Connection $teamSiteConn
-    if ($null -eq $readNoDownload) {
-        Write-Information "Custom SharePoint role '$roleName' not present, creating it."
-        $readNoDownload = Add-PnPRoleDefinition -RoleName $roleName -Description $roleDescription -Clone $teamSiteVisitorsRole.Name -Exclude OpenItems -ErrorAction Stop -Connection $teamSiteConn
-    }
+    Write-Information "Retrieving Restricted View SharePoint permission level."
+    $roleDefs = Get-PnPRoleDefinition -Connection $teamSiteConn
+    $restrictedViewTeamSite = $roleDefs | Where-Object {$_.RoleTypeKind -eq ([Microsoft.SharePoint.Client.RoleType]::RestrictedReader)}
 }
 catch {
     $outcome = "Team error."
-    $details = "An error while handling the custom permission level occurred."
+    $details = "An error while retrieving Restricted View SharePoint permission level."
     $exceptions = $_.Exception.Message
     $endTime = (Get-Date).ToUniversalTime()
     $log = @{
@@ -339,11 +336,13 @@ foreach ($channel in $teamChannels) {
             continue
         }
         try {
-            $web = Get-PnPWeb -Includes AssociatedMemberGroup, AssociatedVisitorGroup -ErrorAction Stop -Connection $connectionToUse 
+            $web = Get-PnPWeb -Includes AssociatedMemberGroup, AssociatedVisitorGroup, AssociatedOwnerGroup -ErrorAction Stop -Connection $connectionToUse 
             $members = $web.AssociatedMemberGroup
             $visitors = $web.AssociatedVisitorGroup
+            $owners = $web.AssociatedOwnerGroup
             $membersRole = Get-PnPGroupPermissions -Identity $members -ErrorAction Stop -Connection $connectionToUse | Where-Object { $_.Hidden -eq $false }
             $visitorsRole = Get-PnPGroupPermissions -Identity $visitors -ErrorAction Stop -Connection $connectionToUse | Where-Object { $_.Hidden -eq $false }
+            $ownersRole = Get-PnPGroupPermissions -Identity $owners -ErrorAction Stop -Connection $connectionToUse | Where-Object { $_.Hidden -eq $false }
         }
         catch {
             $channelErrorOccurred = $true
@@ -371,15 +370,14 @@ foreach ($channel in $teamChannels) {
             continue
         }
         try {
-            $readNoDownload = Get-PnPRoleDefinition $roleName -ErrorAction SilentlyContinue -Connection $connectionToUse
-            if ($null -eq $readNoDownload) {
-                $readNoDownload = Add-PnPRoleDefinition -RoleName $roleName -Description $roleDescription -Clone $visitorsRole.Name -Exclude OpenItems -ErrorAction Stop -Connection $connectionToUse
-            }
+            Write-Information "Retrieving Restricted View SharePoint permission level for private Site Collection '$privateChannelSiteUrl'."
+            $roleDefs = Get-PnPRoleDefinition -Connection $connectionToUse
+            $restrictedView = $roleDefs | Where-Object {$_.RoleTypeKind -eq ([Microsoft.SharePoint.Client.RoleType]::RestrictedReader)}
         }
         catch {
             $channelErrorOccurred = $true
             $outcome = "Channel error."
-            $details = "An error while handling the custom permission level for private channel '$($channel.DisplayName)' occurred. "
+            $details = "An error while retrieving Restricted View SharePoint permission level for private channel '$($channel.DisplayName)' occurred. "
             $exceptions = $_.Exception.Message
             $endTime = (Get-Date).ToUniversalTime()
             $log = @{
@@ -403,12 +401,15 @@ foreach ($channel in $teamChannels) {
         }
     }
     #endregion Handling Private Channel specific objects
-    else {
+    else { # it's a standard channel (not private), use the Team Site related objects...
         $connectionToUse = $teamSiteConn
+        $owners = $teamSiteOwners
+        $ownersRole = $teamSiteOwnersRole
         $members = $teamSiteMembers
-        $visitors = $teamSitevisitors
         $membersRole = $teamSiteMembersRole
+        $visitors = $teamSitevisitors
         $visitorsRole = $teamSiteVisitorsRole
+        $restrictedView = $restrictedViewTeamSite
     }
     #region Getting channel folder object
     try {
@@ -508,8 +509,9 @@ foreach ($channel in $teamChannels) {
     #endregion Creating channel Recordings folder if needed
     #region Setting custom permissions on channel Recordings folder
     try {
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -RemoveRole $visitorsRole.Name -AddRole $readNoDownload.Name -Connection $connectionToUse
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members -RemoveRole $membersRole.Name -AddRole $readNoDownload.Name -Connection $connectionToUse
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -AddRole $restrictedView.Name -Connection $connectionToUse -ClearExisting
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members  -AddRole $restrictedView.Name -Connection $connectionToUse
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $owners   -AddRole $ownersRole.Name -Connection $connectionToUse
     }
     catch {
         $channelErrorOccurred = $true
