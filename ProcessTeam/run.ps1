@@ -510,6 +510,7 @@ foreach ($channel in $teamChannels) {
     #region Setting custom permissions on channel Recordings folder
     try {
         Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -AddRole $restrictedView.Name -Connection $connectionToUse -ClearExisting
+        Start-Sleep 5
         Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members  -AddRole $restrictedView.Name -Connection $connectionToUse
         Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $owners   -AddRole $ownersRole.Name -Connection $connectionToUse
     }
