@@ -3,7 +3,7 @@ This solution aims to prevent that Teams channel meeting recordings stored into 
 
 By default, Teams channel meeting recordings are now saved into the SharePoint site associated to the team and team members are added to the default SharePoint members group; this gives them Edit permission on all the SharePoint contents, including the possibility of downloading files.
 
-This solution basically changes the permissions assigned to the default SharePoint members group on the folders containing the recordings files (it breaks the permissions inheritance and assigns the desired permissions).
+This solution basically changes the permissions assigned to the default SharePoint members group on the folders containing the recordings files (it breaks the permissions inheritance and assigns the desired "Restricted View" permission).
 
 [Here](https://github.com/JieYuan23/TeamsMeetingRecordingsNoDownload) you can find the same solution implemented as a single PowerShell script you might want to use for one-shot executions.
 

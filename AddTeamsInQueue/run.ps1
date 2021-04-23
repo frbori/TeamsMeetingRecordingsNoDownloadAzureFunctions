@@ -6,6 +6,12 @@ $tenantPrefix = $env:TENANT_PREFIX
 $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
 
+#region Import modules
+Import-Module Microsoft.Graph.Authentication -RequiredVersion "1.3.1"
+Import-Module Microsoft.Graph.Groups -RequiredVersion "1.3.1"
+Import-Module PnP.PowerShell -RequiredVersion "1.3.0"
+#endregion Import modules
+
 #region Authentication
 try {
     Write-Information "Connecting to PnP Online."
@@ -27,7 +33,7 @@ Select-MgProfile -Name "beta" # necessary to get all the teams using the filter 
 
 # Retrieving all the teams
 try {
-    Write-Information "Retrieving all the Microsoft Teams."
+    Write-Information "Retrieving all the Microsoft Teams."    
     $teams = Get-MgGroup -Filter "resourceProvisioningOptions/Any(x:x eq 'Team')" -All -Property Id, DisplayName -ErrorAction Stop
 }
 catch {

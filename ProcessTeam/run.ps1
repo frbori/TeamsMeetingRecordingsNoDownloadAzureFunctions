@@ -35,6 +35,14 @@ $correlationId = New-Guid
 $channelErrorOccurred = $false
 #endregion Variables
     
+#region Import modules
+Import-Module Microsoft.Graph.Authentication -RequiredVersion "1.3.1"
+Import-Module Microsoft.Graph.Groups -RequiredVersion "1.3.1"
+Import-Module Microsoft.Graph.Teams -RequiredVersion "1.3.1"
+Import-Module Microsoft.Graph.Files -RequiredVersion "1.3.1"
+Import-Module PnP.PowerShell -RequiredVersion "1.3.0"
+#endregion Import modules
+
 Write-Information "Processing team '$teamDisplayName'."
 
 #region Authentication
@@ -55,7 +63,6 @@ catch {
     $outcome = "Team error."
     $details = "An authentication issue occurred."
     $exceptions = $_.Exception.Message
-    #LogOutcomeToTableStorage -TableBindingName "TableBinding" -PartitionKey $partitionKey -TeamId $teamId -StartTime $teamStartTime -Details $details -Exceptions $exceptions -TeamDisplayName $teamDisplayName -Outcome $outcome
     $endTime = (Get-Date).ToUniversalTime()
     $log = @{
         PartitionKey    = $partitionKey 
@@ -180,7 +187,7 @@ catch {
 try {
     Write-Information "Retrieving Restricted View SharePoint permission level."
     $roleDefs = Get-PnPRoleDefinition -Connection $teamSiteConn
-    $restrictedViewTeamSite = $roleDefs | Where-Object {$_.RoleTypeKind -eq ([Microsoft.SharePoint.Client.RoleType]::RestrictedReader)}
+    $restrictedViewTeamSite = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
 }
 catch {
     $outcome = "Team error."
@@ -372,7 +379,7 @@ foreach ($channel in $teamChannels) {
         try {
             Write-Information "Retrieving Restricted View SharePoint permission level for private Site Collection '$privateChannelSiteUrl'."
             $roleDefs = Get-PnPRoleDefinition -Connection $connectionToUse
-            $restrictedView = $roleDefs | Where-Object {$_.RoleTypeKind -eq ([Microsoft.SharePoint.Client.RoleType]::RestrictedReader)}
+            $restrictedView = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
         }
         catch {
             $channelErrorOccurred = $true
@@ -401,7 +408,8 @@ foreach ($channel in $teamChannels) {
         }
     }
     #endregion Handling Private Channel specific objects
-    else { # it's a standard channel (not private), use the Team Site related objects...
+    else {
+        # it's a standard channel (not private), use the Team Site related objects...
         $connectionToUse = $teamSiteConn
         $owners = $teamSiteOwners
         $ownersRole = $teamSiteOwnersRole
@@ -509,10 +517,9 @@ foreach ($channel in $teamChannels) {
     #endregion Creating channel Recordings folder if needed
     #region Setting custom permissions on channel Recordings folder
     try {
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -AddRole $restrictedView.Name -Connection $connectionToUse -ClearExisting
-        Start-Sleep 5
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members  -AddRole $restrictedView.Name -Connection $connectionToUse
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $owners   -AddRole $ownersRole.Name -Connection $connectionToUse
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $owners -AddRole $ownersRole.Name -Connection $connectionToUse -ClearExisting
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -AddRole $restrictedView.Name -Connection $connectionToUse
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members -AddRole $restrictedView.Name -Connection $connectionToUse
     }
     catch {
         $channelErrorOccurred = $true
@@ -562,7 +569,6 @@ foreach ($channel in $teamChannels) {
     }
     $logReport += $log
     Write-Information "Channel '$($channel.DisplayName)' processed successfully."
-    #LogOutcomeToTableStorage -TableBindingName "TableBinding" -PartitionKey $partitionKey -TeamId $teamId -StartTime $channelStartTime -Details $details -Exceptions $exceptions -TeamDisplayName $teamDisplayName -Outcome $outcome -ChannelId $channel.Id
 }    
 #endregion Processing each channel
 
@@ -606,6 +612,5 @@ else {
 }
 
 # Logging out to the table storage
-#LogOutcomeToTableStorage -TableBindingName "TableBinding" -PartitionKey $partitionKey -TeamId $teamId -StartTime $teamStartTime -Details $details -Exceptions $exceptions -TeamDisplayName $teamDisplayName -Outcome $outcome
 Write-Information "Pushing out results to table storage."
 $logReport | Push-OutputBinding -Name "TableBinding"
