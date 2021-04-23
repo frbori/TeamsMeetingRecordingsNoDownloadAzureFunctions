@@ -95,6 +95,7 @@ $functionAppName = "<functionAppName>"       # the name of the Function App
 $createRecordingsFolder = "true"             # set this to "true" to have the script pre-create the Recordings folders if not already there
 $zipPackage = "<zipPackageFullPath>"         # the full path to the zip file, e.g.: c:\package\file.zip
 $subscriptionName = ""                       # leave blank if you have juts one subscription, otherwise specify which subscription you want to use
+$serviceAppPlanName = "<serviceAppPlanName>" # the name of the Service App Plan, if it doesn't match an existing Service App Plan, a new one will be created with this name
 #endregion VARIABLES
 
 #region AZURE APP REGISTRATION
@@ -132,6 +133,14 @@ if ($null -eq $storageAccount)
     New-AzStorageAccount -ResourceGroupName $resourceGroupName -Name $storageAccountName -Location $location -SkuName Standard_LRS -Kind Storage
 }
 
+Write-Host "Retrieving Service App Plan '$serviceAppPlanName'"
+$serviceAppPlan = Get-AzAppServicePlan -Name $serviceAppPlanName -ResourceGroupName $resourceGroupName
+if ($null -eq $serviceAppPlan)
+{
+    Write-Host "Service App Plan '$serviceAppPlanName' is not present, creating it"
+    New-AzAppServicePlan -Name $serviceAppPlanName -Location $location -Tier Standard -ResourceGroupName $resourceGroupName
+}
+
 $appSettings = @{
         WEBSITE_RUN_FROM_PACKAGE = "1"
         CLIENT_ID = $clientId
@@ -156,6 +165,9 @@ if ($null -eq $functionApp)
     New-AzFunctionApp -ResourceGroupName $resourceGroupName -Name $functionAppName -Location $location -Runtime PowerShell -OSType Windows -RuntimeVersion 7.0 -FunctionsVersion 3 -StorageAccountName $storageAccountName -AppSetting $appSettings
 }
 Write-Host "Remember to upload $appRegistrationName.pfx certificate to the Function App '$functionAppName'" -ForegroundColor Yellow
+
+Write-Host "Setting Service App Plan '$serviceAppPlanName' to Function App '$functionAppName'"
+Set-AzWebApp -Name $functionAppName -AppServicePlan $serviceAppPlanName -ResourceGroupName $resourceGroupName
 #endregion RETRIEVING/CREATING AZURE RESOURCE GROUP, STORAGE ACCOUNT, FUNCTION APP
 
 # PUBLISHING THE ZIP PACKAGE

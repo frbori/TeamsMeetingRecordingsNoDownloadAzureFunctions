@@ -13,6 +13,8 @@ $spoRootUrl = "https://$env:TENANT_PREFIX.sharepoint.com"
 $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
 $createRecordingsFolder = "true" -eq $env:CREATE_RECORDINGS_FOLDER
+$teamChannels = $null    
+$web = $null
 $outcome = "Completed with no error."
 $details = ""
 $exceptions = ""
@@ -25,8 +27,13 @@ $teamSiteConn = $null
 $connectionToUse = $null
 $members = $null
 $visitors = $null
+$owners = $null
 $membersRole = $null
 $visitorsRole = $null
+$ownersRole = $null
+$roleDefs = $null
+$restrictedView = $null
+$restrictedViewTeamSite = $null
 $partitionKey = $teamStartTime.Year
 $logReport = @()
 $log = $null
@@ -34,7 +41,9 @@ $endTime = $null
 $correlationId = New-Guid
 $channelErrorOccurred = $false
 #endregion Variables
-    
+
+$env:PNPPOWERSHELL_UPDATECHECK = "false"
+
 #region Import modules
 Import-Module Microsoft.Graph.Authentication -RequiredVersion "1.3.1"
 Import-Module Microsoft.Graph.Groups -RequiredVersion "1.3.1"

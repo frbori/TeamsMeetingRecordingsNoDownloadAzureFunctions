@@ -6,6 +6,8 @@ $tenantPrefix = $env:TENANT_PREFIX
 $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
 
+$env:PNPPOWERSHELL_UPDATECHECK = "false"
+
 #region Import modules
 Import-Module Microsoft.Graph.Authentication -RequiredVersion "1.3.1"
 Import-Module Microsoft.Graph.Groups -RequiredVersion "1.3.1"
