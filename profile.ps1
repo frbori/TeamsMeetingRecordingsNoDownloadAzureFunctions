@@ -20,7 +20,8 @@
 # Enable-AzureRmAlias
 
 # You can also define functions or aliases that can be referenced in any of your PowerShell functions.
-function LogOutcomeToTableStorage {
+
+<#function LogOutcomeToTableStorage {
     [CmdletBinding()]
     param (
         [Parameter()][string]$TableBindingName,
@@ -46,4 +47,19 @@ function LogOutcomeToTableStorage {
         TeamDisplayName = $TeamDisplayName
         ChannelId       = $ChannelId
     }
+}
+#>
+function GetTeamWebsiteUrl() {
+    param
+    (
+        [string][Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$TeamID,
+        [string][Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()]$AccessToken
+    )
+    $graphUrl = "https://graph.microsoft.com/v1.0/groups/$TeamID/sites/root?`$select=webUrl"
+    $headers = @{
+        "Content-Type"  = "application/json"
+        "Authorization" = "Bearer $AccessToken"
+    }
+    $response = Invoke-RestMethod -Uri $graphUrl -Headers $headers -Method Get -ContentType "application/json"
+    return $response.webUrl
 }
