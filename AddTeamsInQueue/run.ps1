@@ -1,10 +1,11 @@
 # Input bindings are passed in via param block.
 param($Timer)
 
-# Variables
+#region Variables
 $tenantPrefix = $env:TENANT_PREFIX
 $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
+#endregion Variables
 
 $env:PNPPOWERSHELL_UPDATECHECK = "false"
 
@@ -24,9 +25,8 @@ try {
     Connect-MgGraph -AccessToken $accessToken -ErrorAction Stop
 }
 catch {
-    $exceptionMessage = $_.Exception.Message
-    Write-Error "Couldn't authenticate successfully. $exceptionMessage"
-    return
+    Write-Error "Couldn't authenticate successfully."
+    throw $_.Exception
 }
 #endregion Authentication
 
@@ -39,9 +39,8 @@ try {
     $teams = Get-MgGroup -Filter "resourceProvisioningOptions/Any(x:x eq 'Team')" -All -Property Id, DisplayName -ErrorAction Stop
 }
 catch {
-    $exceptionMessage = $_.Exception.Message
-    Write-Error "Couldn't retrieve all the teams. $exceptionMessage"
-    return
+    Write-Error "Couldn't retrieve all the teams."
+    throw $_.Exception
 }
 
 Write-Information "$($teams.Count) Teams have been retrieved."
