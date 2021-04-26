@@ -48,7 +48,6 @@ $env:PNPPOWERSHELL_UPDATECHECK = "false"
 Import-Module Microsoft.Graph.Authentication -RequiredVersion "1.3.1"
 Import-Module Microsoft.Graph.Groups -RequiredVersion "1.3.1"
 Import-Module Microsoft.Graph.Teams -RequiredVersion "1.3.1"
-Import-Module Microsoft.Graph.Files -RequiredVersion "1.3.1"
 Import-Module PnP.PowerShell -RequiredVersion "1.3.0"
 #endregion Import modules
 
@@ -86,9 +85,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $logReport | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$logReport | Push-OutputBinding -Name "TableBinding"
 }
 #endregion Authentication
 
@@ -99,8 +98,7 @@ Select-MgProfile "beta"
 #region Getting the SharePoint site url associated to the team/o365 group
 try {
     Write-Information "Retrieving Team '$teamDisplayName' SharePoint site url."
-    $drive = Get-MgGroupDrive -GroupId $teamId -ExpandProperty Root -ErrorAction Stop
-    $spSiteUrl = $drive.Root.webUrl.Substring(0, $drive.Root.webUrl.LastIndexOf("/"))
+    $spSiteUrl = GetTeamWebsiteUrl -TeamID $teamId -AccessToken $accessToken
 }
 catch {
     $outcome = "Team error."
@@ -120,9 +118,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $log | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$log | Push-OutputBinding -Name "TableBinding"
 }
 #endregion Getting the SharePoint site url associated to the team/o365 group
 
@@ -149,9 +147,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $log | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$log | Push-OutputBinding -Name "TableBinding"
 }
 #endregion Connecting to the SharePoint site associated to the team/o365 group
     
@@ -186,9 +184,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $log | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$log | Push-OutputBinding -Name "TableBinding"
 }   
 #endregion Getting the current web site and associated SharePoint groups
 
@@ -197,6 +195,7 @@ try {
     Write-Information "Retrieving Restricted View SharePoint permission level."
     $roleDefs = Get-PnPRoleDefinition -Connection $teamSiteConn
     $restrictedViewTeamSite = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
+    $restrictedViewTeamSite.getType() | Out-Null
 }
 catch {
     $outcome = "Team error."
@@ -216,9 +215,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $log | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$log | Push-OutputBinding -Name "TableBinding"
 }   
 #endregion Handling custom permission level
         
@@ -251,9 +250,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $log | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$log | Push-OutputBinding -Name "TableBinding"
 }
 #endregion Getting Documents document library
         
@@ -280,9 +279,9 @@ catch {
         Exceptions      = $exceptions
         CorrelationId   = $correlationId
     }
-    Write-Error "$outcome $details $exceptions"
-    $log | Push-OutputBinding -Name "TableBinding"
-    return
+    Write-Error "$outcome $details"
+    throw $_.Exception
+    #$log | Push-OutputBinding -Name "TableBinding"
 }
 #endregion Retrieving all the public channels
 
