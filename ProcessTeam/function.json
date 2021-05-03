@@ -5,12 +5,6 @@
       "type": "queueTrigger",
       "direction": "in",
       "queueName": "TeamsQueue"
-    },
-    {
-      "tableName": "Log",
-      "name": "TableBinding",
-      "type": "table",
-      "direction": "out"
     }
   ]
 }
