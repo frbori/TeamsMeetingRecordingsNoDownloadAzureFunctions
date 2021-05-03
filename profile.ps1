@@ -21,34 +21,6 @@
 
 # You can also define functions or aliases that can be referenced in any of your PowerShell functions.
 
-<#function LogOutcomeToTableStorage {
-    [CmdletBinding()]
-    param (
-        [Parameter()][string]$TableBindingName,
-        [Parameter()][string]$PartitionKey,
-        [Parameter()][string]$TeamId,
-        [Parameter()][datetime]$StartTime,
-        [Parameter()][string]$Outcome,
-        [Parameter()][string]$Details,
-        [Parameter()][string]$Exceptions,
-        [Parameter()][string]$TeamDisplayName,
-        [Parameter()][string]$ChannelId
-    )
-    $endTime = (Get-Date).ToUniversalTime()
-    Push-OutputBinding -Name $TableBindingName -Value @{
-        PartitionKey    = $PartitionKey
-        RowKey          = $TeamId
-        StartTime       = $StartTime
-        EndTime         = $endTime
-        Duration        = ($endTime - $StartTime).Seconds
-        Outcome         = $Outcome
-        Details         = $Details
-        Exceptions      = $Exceptions
-        TeamDisplayName = $TeamDisplayName
-        ChannelId       = $ChannelId
-    }
-}
-#>
 function GetTeamWebsiteUrl() {
     param
     (
