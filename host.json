@@ -8,7 +8,7 @@
     "logLevel": {
       "default": "Information",
       "Host.Results": "Information",
-      "Function": "Warning"
+      "Function": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
