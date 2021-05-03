@@ -5,6 +5,10 @@ param($Timer)
 $tenantPrefix = $env:TENANT_PREFIX
 $tenant = "$tenantPrefix.onmicrosoft.com"
 $spoAdminCenter = "https://$tenantPrefix-admin.sharepoint.com/"
+$teamsCreationDateStartText = $env:TEAMS_CREATION_DATE_START
+$teamsCreationDateStart = $null
+$teamsCreationDateEndText = $env:TEAMS_CREATION_DATE_END
+$teamsCreationDateEnd = $null
 #endregion Variables
 
 $env:PNPPOWERSHELL_UPDATECHECK = "false"
@@ -22,7 +26,7 @@ try {
     Write-Information "Retrieving the Access Token."
     $accessToken = Get-PnPGraphAccessToken -ErrorAction Stop
     Write-Information "Connecting to Microsoft Graph."
-    Connect-MgGraph -AccessToken $accessToken -ErrorAction Stop
+    Connect-MgGraph -AccessToken $accessToken -ErrorAction Stop | Out-Null
 }
 catch {
     Write-Error "Couldn't authenticate successfully."
@@ -35,8 +39,8 @@ Select-MgProfile -Name "beta" # necessary to get all the teams using the filter 
 
 # Retrieving all the teams
 try {
-    Write-Information "Retrieving all the Microsoft Teams."    
-    $teams = Get-MgGroup -Filter "resourceProvisioningOptions/Any(x:x eq 'Team')" -All -Property Id, DisplayName -ErrorAction Stop
+    Write-Information "Retrieving all the Microsoft Teams."
+    $teams = Get-MgGroup -Filter "resourceProvisioningOptions/Any(x:x eq 'Team')" -All -Property Id, DisplayName, CreatedDateTime -ErrorAction Stop
 }
 catch {
     Write-Error "Couldn't retrieve all the teams."
@@ -45,10 +49,52 @@ catch {
 
 Write-Information "$($teams.Count) Teams have been retrieved."
 
+#region Handling filters on teams creation date
+if (![string]::IsNullOrEmpty($teamsCreationDateStartText) -and ![string]::IsNullOrEmpty($teamsCreationDateEndText)) {
+    try {
+        $teamsCreationDateStart = [Datetime]::ParseExact($teamsCreationDateStartText, 'dd/MM/yyyy', $null)
+        $teamsCreationDateEnd = [Datetime]::ParseExact($teamsCreationDateEndText, 'dd/MM/yyyy', $null)
+        Write-Information "Applying filter on teams creation date: $teamsCreationDateStartText <= creation date <= $teamsCreationDateEndText"
+        $teams = $teams | Where-Object { $_.CreatedDateTime.Date -ge $teamsCreationDateStart -and $_.CreatedDateTime.Date -le $teamsCreationDateEnd }
+    }
+    catch {
+        Write-Error "Couldn't convert start or end team creation date."
+        throw $_.Exception
+    }
+}
+elseif (![string]::IsNullOrEmpty($teamsCreationDateStartText)) {
+    try {
+        $teamsCreationDateStart = [Datetime]::ParseExact($teamsCreationDateStartText, 'dd/MM/yyyy', $null)
+        Write-Information "Applying filter on teams creation date: $teamsCreationDateStartText <= creation date"
+        $teams = $teams | Where-Object { $_.CreatedDateTime.Date -ge $teamsCreationDateStart }
+    }
+    catch {
+        Write-Error "Couldn't convert start creation date."
+        throw $_.Exception
+    }
+}
+elseif (![string]::IsNullOrEmpty($teamsCreationDateEndText)) {
+    try {
+        $teamsCreationDateEnd = [Datetime]::ParseExact($teamsCreationDateEndText, 'dd/MM/yyyy', $null)
+        Write-Information "Applying filter on teams creation date: creation date <= $teamsCreationDateEndText"
+        $teams = $teams | Where-Object { $_.CreatedDateTime.Date -le $teamsCreationDateEnd }
+    }
+    catch {
+        Write-Error "Couldn't convert end team creation date."
+        throw $_.Exception
+    }
+}
+else {
+    Write-Information "No filter condition on teams creation date will be applied."
+}
+#endregion Handling filters on teams creation date
+
+Write-Information "$($teams.Count) Teams will be processed."
+
 # Creating an array of string in the form "<TeamID>,<TeamDisplayName>"
 $teamsArray = @()
 foreach ($team in $teams) {
-    Write-Information "$($team.Id) - $($team.DisplayName)"
+    Write-Information "Team id: $($team.Id) | Created on: $($team.CreatedDateTime.ToShortDateString()) | Display name: $($team.DisplayName)"
     $teamsArray += "$($team.Id),$($team.DisplayName)"
 }
 
