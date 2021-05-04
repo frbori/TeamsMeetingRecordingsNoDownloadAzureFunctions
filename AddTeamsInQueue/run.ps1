@@ -21,11 +21,11 @@ Import-Module PnP.PowerShell -RequiredVersion "1.3.0"
 
 #region Authentication
 try {
-    Write-Information "Connecting to PnP Online."
+    Write-Debug "Connecting to PnP Online."
     Connect-PnPOnline -ClientId $env:CLIENT_ID -Url $spoAdminCenter -Thumbprint $env:CERT_THUMBPRINT -tenant $tenant -ErrorAction Stop
-    Write-Information "Retrieving the Access Token."
+    Write-Debug "Retrieving the Access Token."
     $accessToken = Get-PnPGraphAccessToken -ErrorAction Stop
-    Write-Information "Connecting to Microsoft Graph."
+    Write-Debug "Connecting to Microsoft Graph."
     Connect-MgGraph -AccessToken $accessToken -ErrorAction Stop | Out-Null
 }
 catch {
@@ -34,12 +34,12 @@ catch {
 }
 #endregion Authentication
 
-Write-Information "Switching Microsoft Graph profile to beta."
+Write-Debug "Switching Microsoft Graph profile to beta."
 Select-MgProfile -Name "beta" # necessary to get all the teams using the filter below...
 
 # Retrieving all the teams
 try {
-    Write-Information "Retrieving all the Microsoft Teams."
+    Write-Debug "Retrieving all the Microsoft Teams."
     $teams = Get-MgGroup -Filter "resourceProvisioningOptions/Any(x:x eq 'Team')" -All -Property Id, DisplayName, CreatedDateTime -ErrorAction Stop
 }
 catch {
@@ -99,5 +99,5 @@ foreach ($team in $teams) {
 }
 
 # Pushing the teams in the queue
-Write-Information "Pushing out results to the queue."
+Write-Debug "Pushing out results to the queue."
 Push-OutputBinding -Name Queue -Value $teamsArray
