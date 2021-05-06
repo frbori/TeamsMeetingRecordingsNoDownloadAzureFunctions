@@ -16,8 +16,9 @@ $web = $null
 $outcome = "Completed with no error."
 $details = ""
 $exceptions = ""
-$roleName = "Read no download"
-$roleDescription = "Can view pages and list items but can't download documents."
+$restrictedView = $null
+$restrictedViewTeamSite = $null
+$spDocumentsListId = $null
 $channelFolderUrlObj = $null
 $channelFolderUrl = $null
 $channelFolder = $null
@@ -28,8 +29,6 @@ $connectionToUse = $null
 $members = $null
 $visitors = $null
 $owners = $null
-$membersRole = $null
-$visitorsRole = $null
 $ownersRole = $null
 $channelErrorOccurred = $false
 #endregion Variables
@@ -105,9 +104,7 @@ try {
     $teamSitevisitors = $web.AssociatedVisitorGroup
     $teamSiteOwners = $web.AssociatedOwnerGroup
     
-    Write-Debug "Retrieving default SharePoint groups associated permissions."
-    $teamSiteMembersRole = Get-PnPGroupPermissions -Identity $teamSiteMembers -ErrorAction Stop -Connection $teamSiteConn | Where-Object { $_.Hidden -eq $false }
-    $teamSiteVisitorsRole = Get-PnPGroupPermissions -Identity $teamSitevisitors -ErrorAction Stop -Connection $teamSiteConn | Where-Object { $_.Hidden -eq $false }
+    Write-Debug "Retrieving default SharePoint Owner group associated permission."
     $teamSiteOwnersRole = Get-PnPGroupPermissions -Identity $teamSiteOwners -ErrorAction Stop -Connection $teamSiteConn | Where-Object { $_.Hidden -eq $false }
 }
 catch {
@@ -117,23 +114,6 @@ catch {
     throw $_.Exception    
 }   
 #endregion Getting the current web site and associated SharePoint groups
-
-#region Handling custom permission level
-try {
-    Write-Debug "Retrieving custom SharePoint role '$roleName'."
-    $readNoDownload = Get-PnPRoleDefinition $roleName -ErrorAction SilentlyContinue -Connection $teamSiteConn
-    if ($null -eq $readNoDownload) {
-        Write-Debug "Custom SharePoint role '$roleName' not present, creating it."
-        $readNoDownload = Add-PnPRoleDefinition -RoleName $roleName -Description $roleDescription -Clone $teamSiteVisitorsRole.Name -Exclude OpenItems, ViewVersions, CreateAlerts, CreateSSCSite -ErrorAction Stop -Connection $teamSiteConn
-    }
-}
-catch {
-    $outcome = "Team error."
-    $details = "An error while handling the custom permission level occurred."
-    Write-Error "$outcome $details"
-    throw $_.Exception
-}   
-#endregion Handling custom permission level
         
 #region Getting Documents document library
 try {
@@ -153,11 +133,41 @@ catch {
     throw $_.Exception
 }
 #endregion Getting Documents document library
+
+#region Handling Restricted View permission level
+try {
+    Write-Debug "Retrieving Restricted View SharePoint permission level."
+    $roleDefs = Get-PnPRoleDefinition -Connection $teamSiteConn
+    $restrictedViewTeamSite = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
+    if ($null -eq $restrictedViewTeamSite) {
+        try {
+            $spDocumentsListId = $spLibrary.Id
+            $uri = "$spSiteUrl/_api/web/Lists(@a1)/GetItemById(@a2)/GetSharingInformation?@a1=%27%7B$spDocumentsListId%7D%27&@a2=%271%27&`$Expand=sharingLinkTemplates"
+            Invoke-PnPSPRestMethod -Method Post -Url $uri -ContentType "application/json" -Content @{} | Out-Null
+
+            $roleDefs = Get-PnPRoleDefinition -Connection $teamSiteConn
+            $restrictedViewTeamSite = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
+        }
+        catch {
+            $outcome = "Team error."
+            $details = "An error while triggering Restricted View permission level occurred."
+            Write-Error "$outcome $details"
+            throw $_.Exception
+        }
+    }
+}
+catch {
+    $outcome = "Team error."
+    $details = "An error while handling the custom permission level occurred."
+    Write-Error "$outcome $details"
+    throw $_.Exception
+}   
+#endregion Handling custom permission level
         
 #region Retrieving all the channels
 try {
     Write-Debug "Retrieving all the team '$teamDisplayName' channels."
-    $teamChannels = Get-MgTeamChannel -TeamId $teamId -ErrorAction Stop ###### -Filter "MembershipType eq 'standard'"
+    $teamChannels = Get-MgTeamChannel -TeamId $teamId -ErrorAction Stop
 }
 catch {
     $outcome = "Team error."
@@ -184,7 +194,8 @@ foreach ($channel in $teamChannels) {
     }
     #endregion Getting channel folder url information
     if ($channel.MembershipType -eq "private") {
-        #region Handling Private Channel specific objects
+        #region Handling Private Channel specific objects - SPWeb, AssociatedGroups, Roles
+        # Connecting to the Private Channel SharePoint site
         try {
             $privateChannelSiteUrl = $channelFolderUrlObj.WebUrl.Substring(0, $channelFolderUrlObj.WebUrl.LastIndexOf("/", $channelFolderUrlObj.WebUrl.LastIndexOf("/") - 1))
             $connectionToUse = Connect-PnPOnline -ClientId $env:CLIENT_ID -Url $privateChannelSiteUrl -Thumbprint $env:CERT_THUMBPRINT -tenant $tenant -ErrorAction Stop -ReturnConnection
@@ -197,13 +208,12 @@ foreach ($channel in $teamChannels) {
             Write-Warning "$outcome $details $exceptions"
             continue
         }
+        # Retrieving Private Channel SPWeb, Associated Groups and associated permissions
         try {
             $web = Get-PnPWeb -Includes AssociatedMemberGroup, AssociatedVisitorGroup, AssociatedOwnerGroup -ErrorAction Stop -Connection $connectionToUse 
             $members = $web.AssociatedMemberGroup
             $visitors = $web.AssociatedVisitorGroup
             $owners = $web.AssociatedOwnerGroup
-            $membersRole = Get-PnPGroupPermissions -Identity $members -ErrorAction Stop -Connection $connectionToUse | Where-Object { $_.Hidden -eq $false }
-            $visitorsRole = Get-PnPGroupPermissions -Identity $visitors -ErrorAction Stop -Connection $connectionToUse | Where-Object { $_.Hidden -eq $false }
             $ownersRole = Get-PnPGroupPermissions -Identity $owners -ErrorAction Stop -Connection $connectionToUse | Where-Object { $_.Hidden -eq $false }
         }
         catch {
@@ -214,19 +224,57 @@ foreach ($channel in $teamChannels) {
             Write-Warning "$outcome $details $exceptions"
             continue
         }
+        # Retrieving Private Channel document library
         try {
-            $readNoDownload = Get-PnPRoleDefinition $roleName -ErrorAction SilentlyContinue -Connection $connectionToUse
-            if ($null -eq $readNoDownload) {
-                $readNoDownload = Add-PnPRoleDefinition -RoleName $roleName -Description $roleDescription -Clone $visitorsRole.Name -Exclude OpenItems, ViewVersions, CreateAlerts, CreateSSCSite -ErrorAction Stop -Connection $connectionToUse
+            $documentsListName = "Documents"
+            Write-Debug "Retrieving SharePoint '$documentsListName' document library for private channel '$($channel.DisplayName)'."
+            $spLibrary = Get-PnPList -Identity $documentsListName -Connection  $connectionToUse
+            if ($null -eq $spLibrary) {
+                $documentsListName = "Documenti"
+                Write-Debug "Retrieving SharePoint '$documentsListName' document library for private channel '$($channel.DisplayName)'."
+                $spLibrary = Get-PnPList -Identity $documentsListName -ErrorAction Stop -Connection  $connectionToUse
             }
         }
         catch {
             $channelErrorOccurred = $true
             $outcome = "Channel error."
-            $details = "An error while retrieving '$roleName' SharePoint permission level for private channel '$($channel.DisplayName)' occurred. "
+            $details = "An error while retrieving the 'Documents' document library for private channel '$($channel.DisplayName)' occurred."
+            $exceptions = $_.Exception.Message
+            Write-Error "$outcome $details $exceptions"
+            continue
+        }
+        # Retrieving Private Channel permission levels
+        try {
+            Write-Debug "Retrieving Restricted View SharePoint permission level for private channel '$($channel.DisplayName)'."
+            $roleDefs = Get-PnPRoleDefinition -Connection $connectionToUse
+            $restrictedView = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
+        }
+        catch {
+            $channelErrorOccurred = $true
+            $outcome = "Channel error."
+            $details = "An error while retrieving SharePoint Role Definitions for private channel '$($channel.DisplayName)' occurred. "
             $exceptions = $_.Exception.Message
             Write-Warning "$outcome $details $exceptions"
             continue
+        }
+        # Handling the case when the Private Channel Restricted View permission level is not already there
+        if ($null -eq $restrictedView) {
+            try {
+                $spDocumentsListId = $spLibrary.Id
+                $uri = "$privateChannelSiteUrl/_api/web/Lists(@a1)/GetItemById(@a2)/GetSharingInformation?@a1=%27%7B$spDocumentsListId%7D%27&@a2=%271%27&`$Expand=sharingLinkTemplates"
+                Invoke-PnPSPRestMethod -Method Post -Url $uri -ContentType "application/json" -Content @{} -Connection $connectionToUse | Out-Null
+
+                $roleDefs = Get-PnPRoleDefinition -Connection $connectionToUse
+                $restrictedView = $roleDefs | Where-Object { $_.RoleTypeKind -eq "RestrictedReader" }
+            }
+            catch {
+                $channelErrorOccurred = $true
+                $outcome = "Channel error."
+                $details = "An error while triggering Restricted View permission level for private channel '$($channel.DisplayName)' occurred."
+                $exceptions = $_.Exception.Message
+                Write-Error "$outcome $details $exceptions"
+                continue
+            }
         }
     }
     #endregion Handling Private Channel specific objects
@@ -236,9 +284,8 @@ foreach ($channel in $teamChannels) {
         $owners = $teamSiteOwners
         $ownersRole = $teamSiteOwnersRole
         $members = $teamSiteMembers
-        $membersRole = $teamSiteMembersRole
         $visitors = $teamSitevisitors
-        $visitorsRole = $teamSiteVisitorsRole
+        $restrictedView = $restrictedViewTeamSite
     }
     #region Getting channel folder object
     try {
@@ -288,8 +335,8 @@ foreach ($channel in $teamChannels) {
     #region Setting custom permissions on channel Recordings folder
     try {
         Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $owners -AddRole $ownersRole.Name -Connection $connectionToUse -ClearExisting
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -AddRole $readNoDownload.Name -Connection $connectionToUse
-        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members  -AddRole $readNoDownload.Name -Connection $connectionToUse
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $visitors -AddRole $restrictedView.Name -Connection $connectionToUse
+        Set-PnPFolderPermission -List $documentsListName -Identity "$channelFolderUrl/Recordings" -Group $members -AddRole $restrictedView.Name -Connection $connectionToUse
     }
     catch {
         $channelErrorOccurred = $true
