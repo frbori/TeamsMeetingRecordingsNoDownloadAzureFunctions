@@ -47,6 +47,7 @@ This is a scheduled function (time triggered) that lists all the teams in the te
 It's possible to restrict the set of teams the function will add to the Azure Queue **teamsqueue** by specifing the following two application settings:
 - TEAMS_CREATION_DATE_START (dd/MM/yyyy)
 - TEAMS_CREATION_DATE_END (dd/MM/yyyy)
+
 If none of the two settings is defined or set, all the Teams in the tenant will be added to **teamsqueue**.
 If only the TEAMS_CREATION_DATE_START is set, the Teams added to the **teamsqueue** will be the ones with *TeamsCreationDate >= TEAMS_CREATION_DATE_START*.
 If only the TEAMS_CREATION_DATE_END is set, the Teams added to the **teamsqueue** will be the ones with *TeamsCreationDate <= TEAMS_CREATION_DATE_END*.
