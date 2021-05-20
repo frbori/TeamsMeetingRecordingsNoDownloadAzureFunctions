@@ -7,6 +7,8 @@ This solution basically changes the permissions assigned to the default SharePoi
 
 [Here](https://github.com/JieYuan23/TeamsMeetingRecordingsNoDownload) you can find the same solution implemented as a single PowerShell script you might want to use for one-shot executions.
 
+**Note**: this solution works fine for scenarios where only the team owners are supposed to start the channel meeting recordings, for instance Universities or Schools class related teams where just the instructor is supposed to register the lessons. Indeed, given that team members will get the "Restricted View" permission, they won't be able anymore to upload the recordings into SharePoint. In this case the recording will instead be temporarily saved to Azure Media Services (AMS). Once stored in AMS, no retry attempts are made to automatically upload the recording to SharePoint. Meeting recordings stored in AMS are available for 21 days before being automatically deleted. Users can download the video from AMS if they need to keep a copy (further details [here](https://docs.microsoft.com/en-us/microsoftteams/tmr-meeting-recording-change)).
+
 ## Solution components
 The solution is mainly composed by the follwing two components:
 - an Azure AD App Registration
@@ -23,12 +25,11 @@ The Azure Function App contains two Azure functions:
 - [AddTeamsInQueue](/AddTeamsInQueue)
 - [ProcessTeam](/ProcessTeam)
 
-The PowerShell modules used by the solution are:
-- PnP.PowerShell (loaded as  managed dependency)
-- Microsoft.Graph.Authentication (loaded as  managed dependency)
-- Microsoft.Graph.Teams (loaded as  managed dependency)
-- Microsoft.Graph.Groups (loaded as  managed dependency)
-- Microsoft.Graph.Files (explicitely inclueded in the solution due to issues when trying to load it as managed dependency)
+The PowerShell modules used by the solution are (all loaded as managed dependency):
+- PnP.PowerShell
+- Microsoft.Graph.Authentication
+- Microsoft.Graph.Teams
+- Microsoft.Graph.Groups
 
 The explicitely added Application Settings used by the Function App are:
 - WEBSITE_RUN_FROM_PACKAGE (set to "1")
@@ -38,10 +39,20 @@ The explicitely added Application Settings used by the Function App are:
 - CREATE_RECORDINGS_FOLDER (if "true" the solution creates the "Recordings" folders if not already there, otherwise it changes the permissions only on the already created "Recordings" folders. Set by default to "true")
 - TENANT_PREFIX (set as the tenant prefix - the part of the tenant name just before ".onmicrosoft.com")
 - SCHEDULE (defines the schedule of the **AddTeamsInQueue** function as [NCRONTAB expression](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=csharp#ncrontab-expressions). Set by default at "0 0 6 * * *", that means each day at 6:00 AM UTC)
+- TEAMS_CREATION_DATE_START (used to restrict the set of Teams that will be processed based on their creation date, more details in [AddTeamsInQueue](/AddTeamsInQueue))
+- TEAMS_CREATION_DATE_END (used to restrict the set of Teams that will be processed based on their creation date, more details in [AddTeamsInQueue](/AddTeamsInQueue))
 
 #### AddTeamsInQueue
 This is a scheduled function (time triggered) that lists all the teams in the tenant and, for each of them, adds a message into an Azure Queue called **teamsqueue**.
-Each message contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
+It's possible to restrict the set of teams the function will add to the Azure Queue **teamsqueue** by specifing the following two application settings:
+- TEAMS_CREATION_DATE_START (dd/MM/yyyy)
+- TEAMS_CREATION_DATE_END (dd/MM/yyyy)
+If none of the two settings is defined or set, all the Teams in the tenant will be added to **teamsqueue**.
+If only the TEAMS_CREATION_DATE_START is set, the Teams added to the **teamsqueue** will be the ones with *TeamsCreationDate >= TEAMS_CREATION_DATE_START*.
+If only the TEAMS_CREATION_DATE_END is set, the Teams added to the **teamsqueue** will be the ones with *TeamsCreationDate <= TEAMS_CREATION_DATE_END*.
+If both are set, the Teams added to the **teamsqueue** will be the ones with *TEAMS_CREATION_DATE_START <= TeamsCreationDate <= TEAMS_CREATION_DATE_END*.
+
+Each message added to the Azure Queue contains the team id and the team display name separated by a comma (eg.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*).
 
 If you want to manually add a message to the queue (e.g.: *332cfb44-c4b5-4513-8404-72f3ed82e6d1,HR*) in order to start the processing of a specific team, you can use the handy tool [Azure Storage Explorer](https://azure.microsoft.com/en-us/features/storage-explorer/).
 
@@ -54,27 +65,6 @@ The team processing entails:
 - retrieving the channels folders
 - creating the "Recordings" folder inside the channels folders (if not already created and CREATE_RECORDINGS_FOLDER application setting set to "true")
 - changing the permissions on the **Recordings** folders so that team members won't be able to download files stored into those folders
-
-This function logs processing outcome into an Azure storage table called **Log**. It logs at both teams and channels level.
-The **Log** storage table contains the following columns:
-- PartitionKey (set as the current year - eg.: *2021*)
-- RowKey (set as team id or channels id + the current date and time)
-- Timestamp
-- TeamId
-- TeamDisplayName
-- ChannelId (null means the entity refers to the entire team, otherwise to the specific channel)
-- ChannelDisplayName (null means the entity refers to the entire team, otherwise to the specific channel)
-- StartTime
-- EndTime
-- Duration
-- Outcome (tells if the team or the channel has been processed successfully or not)
-- Details (tells in which step the error occurred)
-- Exceptions (dumps the exceptions)
-- CorrelationId (to correlate entities belonging to the same function execution instance)
-
-All the dates and times are logged in UTC.
-
-You can use the handy tool [Azure Storage Explorer](https://azure.microsoft.com/en-us/features/storage-explorer/) to see the entities that have been already added to the table.
 
 ## How to deploy
 Deploying the solution on your tenant comprises 3 main steps:
@@ -95,7 +85,6 @@ $functionAppName = "<functionAppName>"       # the name of the Function App
 $createRecordingsFolder = "true"             # set this to "true" to have the script pre-create the Recordings folders if not already there
 $zipPackage = "<zipPackageFullPath>"         # the full path to the zip file, e.g.: c:\package\file.zip
 $subscriptionName = ""                       # leave blank if you have juts one subscription, otherwise specify which subscription you want to use
-$serviceAppPlanName = "<serviceAppPlanName>" # the name of the Service App Plan, if it doesn't match an existing Service App Plan, a new one will be created with this name
 #endregion VARIABLES
 
 #region AZURE APP REGISTRATION
@@ -133,14 +122,6 @@ if ($null -eq $storageAccount)
     New-AzStorageAccount -ResourceGroupName $resourceGroupName -Name $storageAccountName -Location $location -SkuName Standard_LRS -Kind Storage
 }
 
-Write-Host "Retrieving Service App Plan '$serviceAppPlanName'"
-$serviceAppPlan = Get-AzAppServicePlan -Name $serviceAppPlanName -ResourceGroupName $resourceGroupName
-if ($null -eq $serviceAppPlan)
-{
-    Write-Host "Service App Plan '$serviceAppPlanName' is not present, creating it"
-    New-AzAppServicePlan -Name $serviceAppPlanName -Location $location -Tier Standard -ResourceGroupName $resourceGroupName
-}
-
 $appSettings = @{
         WEBSITE_RUN_FROM_PACKAGE = "1"
         CLIENT_ID = $clientId
@@ -149,6 +130,8 @@ $appSettings = @{
         CREATE_RECORDINGS_FOLDER = $createRecordingsFolder
         TENANT_PREFIX = $tenantPrefix
         SCHEDULE = "0 0 6 * * *"
+        TEAMS_CREATION_DATE_START = ""
+        TEAMS_CREATION_DATE_END = ""
 }
 
 Write-Host "Retrieving Function App '$functionAppName'"
@@ -165,9 +148,6 @@ if ($null -eq $functionApp)
     New-AzFunctionApp -ResourceGroupName $resourceGroupName -Name $functionAppName -Location $location -Runtime PowerShell -OSType Windows -RuntimeVersion 7.0 -FunctionsVersion 3 -StorageAccountName $storageAccountName -AppSetting $appSettings
 }
 Write-Host "Remember to upload $appRegistrationName.pfx certificate to the Function App '$functionAppName'" -ForegroundColor Yellow
-
-Write-Host "Setting Service App Plan '$serviceAppPlanName' to Function App '$functionAppName'"
-Set-AzWebApp -Name $functionAppName -AppServicePlan $serviceAppPlanName -ResourceGroupName $resourceGroupName
 #endregion RETRIEVING/CREATING AZURE RESOURCE GROUP, STORAGE ACCOUNT, FUNCTION APP
 
 # PUBLISHING THE ZIP PACKAGE
