@@ -166,3 +166,5 @@ The remaining manual steps are (as highlighted by the script as well):
     - select **Private Key Certificates (.pfx)** tab
     - click on **+ Upload Certificate**
     - select the certificate, enter the password (chosen during app registration) and click **Upload**
+
+    Test.
